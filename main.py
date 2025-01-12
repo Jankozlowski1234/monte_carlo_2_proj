@@ -51,8 +51,9 @@ def Black_shoes_form(r = 0.05,sd = 0.25,S_0 = 100,K = 100):
     d2 = d1-sd
     return S_0*norm.cdf(d1)-K*np.exp(-r)*norm.cdf(d2)
 
-def generate_and_calculate_I(n = 100,r = 0.05,sd = 0.25,S_0 = 100,i =1,m =1,K = 100,for_Control_variates = False):
-    B = create_brown_motion_i(n=n,i = i,m = m)
+def generate_and_calculate_I(n = 100,r = 0.05,sd = 0.25,S_0 = 100,i =1,m =1,K = 100,B = None,for_Control_variates = False):
+    if B is None:
+        B = create_brown_motion_i(n=n,i = i,m = m)
     S = create_geom_motion(B = B,n=n,r = r ,sd = sd,S_0 = S_0,T = 1)
     A = np.mean(S)
     I = np.exp(-r) * max(0, A - K)
@@ -102,6 +103,22 @@ def calculate_Strat_opt_est_vec(N = 10,N1 = 100,m = 10,R = 100,n = 1,r = 0.05,sd
     return np.array([calculate_Strat_est(ps = ps,Ri = Ri,R = R,n =n,r =r,sd = sd,S_0 = S_0,K = K) for _ in range(N)])
 
 
+### Antithetic est
+
+def calculate_ant_est(R = 100,n = 100,r = 0.05,sd = 0.25,S_0 = 100,K = 100):
+    R1 = int(R/2)
+    v = np.zeros(2*R1)
+    for i in range(R1):
+        B = np.random.normal(size=1)
+        v[2*i] = generate_and_calculate_I(n=n, r=r, sd=sd, B = B,S_0=S_0, K=K)
+        v[2*i+1] = generate_and_calculate_I(n=n, r=r, sd=sd, B=-B, S_0=S_0, K=K)
+    return np.mean(v)
+
+def calculate_ant_est_vec(N = 10,R = 100,n = 1,r = 0.05,sd = 0.25,S_0 = 100,K = 100):
+    return np.array([calculate_ant_est(R = R,n =n,r =r,sd = sd,S_0 = S_0,K = K) for _ in range(N)])
+
+
+
 
 ### control est
 
@@ -117,6 +134,10 @@ def calculate_control_est(R = 100,n = 1,r = 0.05,sd = 0.25,S_0 = 100,K = 100):
     cov_XY = cov_mat[0][1]
     c = -cov_XY/X_var
     return np.mean(Y)-c*np.mean(X)
+
+
+def calculate_control_est_vec(N = 10,R = 100,n = 1,r = 0.05,sd = 0.25,S_0 = 100,K = 100):
+    return np.array([calculate_control_est(R = R,n =n,r =r,sd = sd,S_0 = S_0,K = K) for _ in range(N)])
 
 
 
