@@ -1,0 +1,264 @@
+---
+title: "Drugi raport z symulacji Monte Carlo"
+author: "Jan Kozłowski"
+date: "25-01-2025"
+output: 
+  pdf_document:
+    extra_dependencies: ["amsmath","dsfont","xcolor"]
+    fig_caption: yes
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{dsfont}
+- \usepackage{float}
+urlcolor: blue
+
+---
+
+
+```{r setup, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+setwd("C:/Users/jaako/Desktop/studia/Monte Carlo/monte_carlo_2_proj")
+
+
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+
+
+```
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+r <- 0.05
+sigma<-0.25
+S<-100
+K<-100
+
+d1<-1/sigma*(log(S/K)+r+sigma^2/2)
+d2<-d1-sigma
+
+BSF<-S*pnorm(d1)-K*exp(-r)*pnorm(d2)
+```
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+
+
+#first plot 
+
+df1 <- read.csv("data_n_1.csv",header = T)
+
+df1$n<-as.factor(df1$n)
+df1$R<-as.factor(df1$R)
+
+
+
+wyk1<-df1 %>%
+  group_by(type)%>%
+  summarise(variance = var(value),
+            means =  mean(value),
+            low = means-qnorm(1-0.05/2)*sqrt(variance/length(value)),
+            up = means+qnorm(1-0.05/2)*sqrt(variance/length(value)))
+
+wyk1<-data.frame(wyk1)
+
+```
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+df2 <- read.csv("data_n_1_different_R.csv",header = T)
+
+wyk2<-df2 %>%
+  group_by(type,R)%>%
+  summarise(variance = var(value),
+            means =  mean(value))
+
+df22 <- read.csv("data_n_1_different_R2.csv",header = T)
+
+wyk22<-df22 %>%
+  group_by(type,R)%>%
+  summarise(variance = var(value),
+            means =  mean(value))
+
+```
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+df3 <- read.csv("data_n_different.csv",header = T)
+
+wyk3<-df3 %>%
+  group_by(type,n)%>%
+  summarise(variance = var(value),
+            means =  mean(value),
+            low = means-qnorm(1-0.05/2)*sqrt(variance/length(value)),
+            up = means+qnorm(1-0.05/2)*sqrt(variance/length(value)))
+
+wyk3<-data.frame(wyk3)
+wyk3<-subset(wyk3,wyk3$n>1)
+
+```
+
+
+
+\begin{center}
+ \textbf{Przypadek dla n=1}
+\end{center}
+Zobatrzmy jak będą sie zachowywać nasze estymatory w sytuacji, gdy $n=1$, symulacje będziemy przeprowadzać dla $R=500$ oraz będziemy je powtarazć $N=500$ razy. Zacznijmy od narysowania przedziałów ufnośći dla tych estymatorów:
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+ggplot(wyk1, aes(x=type, y = means)) + geom_point() +  
+  geom_errorbar(aes(ymin = low, ymax = up)) + 
+  geom_hline(yintercept=BSF, linetype="dashed", color = "red")+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "95% przedziały ufności różnych estymatorów dla n=1",
+       subtitle = "z dodaną prawdzową wartością",
+       x="Estymatory",y=" ",
+       caption = "Wykres 1")
+
+```
+
+Możemy zauważyć, że dla każdego estymatora wartość średnia, czyli środek przedziału ufności jest bardzo blisko wartości prawdziwej, co zgadza się z nieobciążościami tych estymatorów. Z drugiej strony porównując wariancje, która odpowaida za "szerokość" przedziału ufności widzimy, że najniższa jest dla estymatorów Control variates oraz Stratified z opcją optymalniej alokacji, a największa wariancja jest dla podstawowego estymatora Monte Carlo.
+ 
+Innym pytaniem jakie możemy sobie zadać jest zbadanie wpływu $R$ na otrzymywane wariancje. Tutaj znów na $N=100$ porównajmy wyniki, z powodu dużych różnic dla małych $R$ zobaczmy najpierw wartości dla $R>50$ 
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+wyk2<-subset(wyk2,wyk2$R>20)
+ggplot(wyk2,aes(x=R,y=variance,col = type))+geom_line()+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "Wariancje różnych estymatorów dla n=1",
+       subtitle = "dla różnych R",
+       x="R",y="Wariancja",
+       caption = "Wykres 2")
+
+```
+Możemy zauważyć, że estymator Control variates daje wciąż najlepsze wyniki na największą wariancje ma estymator CMC, choć dla każdego estymatora tempo zbieżości wydaje się być podobne.
+Pozostaje przyjżeć się wukresowi dla $R<50$
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+ggplot(wyk22,aes(x=R,y=variance,col = type))+geom_line()+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "Wariancje różnych estymatorów dla n=1",
+       subtitle = "dla różnych R",
+       x="R",y="Wariancja",
+       caption = "Wykres 3")
+
+```
+Tutaj choć różnice bezwględne są duże to ogólne trend jest podobny, zastanawiająca może być duża wariancja estymatora Control variates dla $R<0$ ale w takich losowaniach możliwe jest, że cowariancja między $I$ a $B(1)$ będzie mała, przez co ten estymator nie będzie znacząco "poprawiać" estymatora CMC.
+
+
+\begin{center}
+ \textbf{Przypadek dla n>1}
+\end{center}
+Teraz skupmy się na sytuacji gdy $n>1$ oraz na estymatorach CMC oraz Stratified.
+Znów zacznijmy od narywosania przedziałów ufności oraz ograniczmy się do $n>15$($R=200$ i $N=200$):
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+wyk31<-subset(wyk3,wyk3$n>15)
+ggplot(subset(wyk3,wyk3$n>15&(wyk3$n%%2==0)), aes(x=n, y = means,col = type)) + geom_point(alpha = 0.7) +  
+  geom_errorbar(aes(ymin = low, ymax = up))+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "95% przedziały ufności różnych estymatorów",
+       subtitle = "dla różnych n",
+       x="n",y="",
+       caption = "Wykres 4")
+
+```
+W tym przypadku nie widzimy już znacząco lepszych wyników dla którego kolwiek z estymatorów, więc powinniśmy popatrzeć na wykresy średnich i wariancji.
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+
+ggplot(wyk31,aes(x=n,y=variance,col = type))+geom_line(alpha = 0.7)+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "Wariancje różnych estymatorów",
+       subtitle = "dla różnych n",
+       x="n",y="Wariancja",
+       caption = "Wykres 5")
+
+```
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+
+
+ggplot(wyk31,aes(x=n,y=means,col = type))+geom_line(alpha = 0.7)+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "Średnie różnych estymatorów",
+       subtitle = "dla różnych n",
+       x="n",y="Średnia",
+       caption = "Wykres 6")
+```
+
+Tutaj również nie mamy znaczących różnic pomiędzy estymatorami ale ogólnie możemy zauważyć, że dla dużych $n$ wariancja zdaje się nie zmieniać, a średnia dążdyć do ok 6,9.
+
+Zobatrzmy jescze jak wyglądają te wykresy gdy weźmieny mnijesze $n$, tzn. $1<n<16$:
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+wyk32<-subset(wyk3,wyk3$n<=15)
+ggplot(wyk32, aes(x=n, y = means,col = type)) + geom_point(alpha = 0.7) +  
+  geom_errorbar(aes(ymin = low, ymax = up))+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "95% przedziały ufności różnych estymatorów",
+       subtitle = "dla różnych n",
+       x="n",y="",
+       caption = "Wykres 7")
+
+```
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+
+ggplot(wyk32,aes(x=n,y=variance,col = type))+geom_line(alpha = 0.7)+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "Wariancje różnych estymatorów",
+       subtitle = "dla różnych n",
+       x="n",y="Wariancja",
+       caption = "Wykres 8")
+
+```
+
+
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+
+
+ggplot(wyk32,aes(x=n,y=means,col = type))+geom_line(alpha = 0.7)+
+  theme(legend.position = "bottom",plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+ 
+  labs(title = "Średnie różnych estymatorów",
+       subtitle = "dla różnych n",
+       x="n",y="Średnia",
+       caption = "Wykres 9")
+```
+
+Tutaj wariancje estymatora Stratified z optymalną alokacją są mniejsze od pozostałych, jednak wartości przedziałów ufności są już bardzo podobne.
+\begin{center}
+ \textbf{Tabela wywoływania funkcji}
+\end{center}
+
+W tym projekcjie postanowiłem najpierw generować estymatory w pythonie oraz zapisywać wszystkie wyniki, a następnie manipulacje danych i liczenie variancji,średnich, przedziałów ufności oraz rysowania przeprowadać w R, dlatego podaję funkcję do generowania danych z pythona.
+ 
+```{r, include=TRUE ,warning=FALSE, message=FALSE, echo=FALSE}
+do_zapisywania<-data.frame(matrix(ncol = 3,nrow = 9))
+colnames(do_zapisywania)<-c("nazwa pliku","nazwa funkcji","parametry")
+rownames(do_zapisywania)<-c("Wykres 1","Wykres 2","Wykres 3",
+                            "Wykres 4","Wykres 5","Wykres 6",
+                            "Wykres 7","Wykres 8","Wykres 9")
+do_zapisywania[1,]<-c("data_n_1.csv","zapisz_wyk1","N=500,R=500")
+do_zapisywania[2,]<-c("data_n_1_different_R.csv","zapisz_wyk2","Rs = np.arange(11,1000,50),N = 100")
+do_zapisywania[3,]<-c("data_n_1_different_R2.csv","zapisz_wyk2","Rs = np.arange(2,50,1),N = 100")
+do_zapisywania[4,]<-c("data_n_different.csv","zapisz_wyk3","Ns=np.arange(1,200,1),N=200,R=200")
+do_zapisywania[5,]<-c("data_n_different.csv","zapisz_wyk3","Ns=np.arange(1,200,1),N=200,R=200")
+do_zapisywania[6,]<-c("data_n_different.csv","zapisz_wyk3","Ns=np.arange(1,200,1),N=200,R=200")
+do_zapisywania[7,]<-c("data_n_different.csv","zapisz_wyk3","Ns=np.arange(1,200,1),N=200,R=200")
+do_zapisywania[8,]<-c("data_n_different.csv","zapisz_wyk3","Ns=np.arange(1,200,1),N=200,R=200")
+do_zapisywania[9,]<-c("data_n_different.csv","zapisz_wyk3","Ns=np.arange(1,200,1),N=200,R=200")
+kable(do_zapisywania)
+
+```

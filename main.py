@@ -54,7 +54,7 @@ def Black_shoes_form(r = 0.05,sd = 0.25,S_0 = 100,K = 100):
     d2 = d1-sd
     return np.exp(-r)*(S_0*norm.cdf(d1)-K*np.exp(-r)*norm.cdf(d2))
 
-print(Black_shoes_form())
+
 
 def generate_and_calculate_I(n = 100,r = 0.05,sd = 0.25,S_0 = 100,i =1,m =1,K = 100,B = None,for_Control_variates = False):
     if B is None:
@@ -130,11 +130,10 @@ def calculate_control_est(R = 100,n = 1,r = 0.05,sd = 0.25,S_0 = 100,K = 100):
         i_b = generate_and_calculate_I(n =n,r =r,sd = sd,S_0 = S_0,K = K,for_Control_variates= True)
         Y[i] = i_b[0]
         X[i] = i_b[1]
-    cov_mat = np.stack((X, Y), axis=0)
-    X_var = cov_mat[0][0]
-    cov_XY = cov_mat[0][1]
+    X_var = np.var(X)
+    cov_XY = np.cov(X,Y)[0][1]
     c = -cov_XY/X_var
-    return np.mean(Y)-c*np.mean(X)
+    return np.mean(Y)+c*np.mean(X)
 
 
 def calculate_control_est_vec(N = 10,R = 100,n = 1,r = 0.05,sd = 0.25,S_0 = 100,K = 100):
@@ -154,8 +153,10 @@ def generate_a_lot_for_n_one(N = 100,R=100):
         df = pd.concat([df,dat])
     return df
 
-#generate_a_lot_for_n_one(N = 100,R=100).to_csv("data_n_1.csv", index=False)
 
+
+def zapisz_wyk1(N = 500,R=500):
+    generate_a_lot_for_n_one(N = N,R=R).to_csv("data_n_1.csv", index=False)
 
 def generate_a_lot_for_different_R_for_n_1(Rs = np.arange(100,400,50),N = 100):
     df = pd.DataFrame({"value": [], "type": [], "n": [], "R": []})
@@ -164,8 +165,8 @@ def generate_a_lot_for_different_R_for_n_1(Rs = np.arange(100,400,50),N = 100):
         dat  =generate_a_lot_for_n_one(R = R,N = N)
         df = pd.concat([df, dat])
     return df
-
-#print(generate_a_lot_for_different_R_for_n_1(N = 3))
+def zapisz_wyk2(Rs = np.arange(2,50,1),N = 100):
+    generate_a_lot_for_different_R_for_n_1(Rs = Rs,N = N).to_csv("data_n_1_different_R.csv", index=False)
 
 def generate_a_lot_for_different_n(n,N=100, R=100):
     df = pd.DataFrame({"value": [], "type": [], "n": [], "R": []})
@@ -187,4 +188,10 @@ def create_for_different_n_(Ns = np.arange(1,100,5) ,N = 10,R = 10):
 
     return df2
 
-#create_for_different_n_(Ns = np.arange(1,100,5) ,N = 10,R = 10).to_csv("data_n_different.csv", index=False)
+
+def zapisz_wyk3(Ns = np.arange(1,200,1) ,N = 200,R = 200):
+    create_for_different_n_(Ns = Ns ,N = N,R = R).to_csv("data_n_different.csv", index=False)
+
+
+
+
