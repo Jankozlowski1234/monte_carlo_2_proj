@@ -111,6 +111,6 @@ ggplot(wyk3,aes(x=n,y=means,col = type))+geom_line(alpha = 0.7)+
        caption = "Wykres 2")
 
 
-
-
+df2 <- read.csv("data_n_1_different_R.csv",header = T)
+View(df2)
 
